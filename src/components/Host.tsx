@@ -4,6 +4,7 @@ const Host = () => {
     const socketRef = useRef<WebSocket | null>(null)
     const [hostId, setHostId] = useState<string>("")
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
+    const [members, setMembers] = useState<Array<string>>([])
 
     useEffect(() => {
         socketRef.current = new WebSocket('ws://localhost:8080')
@@ -18,10 +19,35 @@ const Host = () => {
             console.error('websocket error', err)
         }
 
-        socket.onmessage = (e) => {
+        socket.onmessage = async (e) => {
             const message = JSON.parse(e.data)
+            console.log(`message : ${e.data}`)
             if(message.type === 'host-id') {
                 setHostId(message.hostId)
+            } else if(message.type === 'new-member') {
+                const { offer, memberId } = message
+
+                setMembers(prev => [...prev, memberId])
+                console.log(`new member ${memberId}`)
+
+                peerConnectionRef.current = new RTCPeerConnection()
+                const pc = peerConnectionRef.current
+
+                pc.onicecandidate = (e) => {
+                    console.log(`sending new ice candidate ${e.candidate}`)
+                    if(e.candidate) {
+                        socket.send(JSON.stringify({ type : "ice-candidate", candidate : e.candidate }))
+                    }
+
+                }
+                await pc.setRemoteDescription(offer)
+                const answer = await pc.createAnswer()
+                await pc.setLocalDescription(answer)
+                socket.send(JSON.stringify({ type : 'create-answer', answer }))
+            } else if(message.type === 'ice-candidate') {
+                const pc = peerConnectionRef.current
+                pc?.addIceCandidate(new RTCIceCandidate(message.candidate))
+                console.log(`recieved new ice candidate ${message.candidate}`)
             }
         }
 
