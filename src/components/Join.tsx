@@ -22,8 +22,8 @@ const Join = () => {
             const message = JSON.parse(e.data)
             console.log(`message : ${e.data}`)
             if(message.type === 'userId') {
-                setUserId(userId)
-                console.log(`set user id to ${userId}`)
+                setUserId(message.userId)
+                console.log(`set user id to ${message.userId}`)
             } else if(message.type === 'create-answer') {
                 const pc = peerConnectionRef.current
                 pc?.setRemoteDescription(message.answer)
