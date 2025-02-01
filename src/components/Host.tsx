@@ -43,7 +43,7 @@ const Host = () => {
                 await pc.setRemoteDescription(offer)
                 const answer = await pc.createAnswer()
                 await pc.setLocalDescription(answer)
-                socket.send(JSON.stringify({ type : 'create-answer', answer }))
+                socket.send(JSON.stringify({ type : 'create-answer', answer, memberId }))
             } else if(message.type === 'ice-candidate') {
                 const pc = peerConnectionRef.current
                 pc?.addIceCandidate(new RTCIceCandidate(message.candidate))
