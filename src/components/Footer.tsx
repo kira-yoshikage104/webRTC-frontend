@@ -1,8 +1,10 @@
 
 const Footer = () => {
     return (
-        <footer className="flex justify-center items-center bg-ahhblue text-2xl py-4">
-            <h1>Footer Content</h1>
+        <footer className="bg-gray-800 text-white mt-auto">
+            <div className="container mx-auto px-4 py-6 flex justify-center items-center">
+                <p>&copy; 2023 File Sharing App. All rights reserved.</p>
+            </div>
         </footer>
     )
 }
