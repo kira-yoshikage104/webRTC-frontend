@@ -1,4 +1,5 @@
 import { FormEvent, useState, useEffect, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 
 const Join = () => {
     const socketRef = useRef<WebSocket | null>(null)
@@ -6,6 +7,7 @@ const Join = () => {
     const [isInRoom, setIsInRoom] = useState(false)
     const [hostId, setHostId] = useState<string>("")
     const [userId, setUserId] = useState<string>("")
+    const navigate = useNavigate()
 
     useEffect(() => {
         socketRef.current = new WebSocket('ws://localhost:8080')
@@ -34,7 +36,18 @@ const Join = () => {
                 const pc = peerConnectionRef.current
                 pc?.addIceCandidate(new RTCIceCandidate(message.candidate))
                 console.log(`recieved new ice candidate ${message.candidate}`)
+            } else if(message.type === 'disconnected') {
+                peerConnectionRef.current?.close()
+                socketRef.current?.close()
+                console.log('room closed')
+                navigate('/')
             }
+        }
+
+        return () => {
+            peerConnectionRef.current?.close()
+            socketRef.current?.close()
+            console.log('websocket connection disconnected')
         }
     }, [])
 
@@ -60,9 +73,13 @@ const Join = () => {
         console.log(`offer sent ${JSON.stringify(offer)}`)
     }
 
+    const handleLeaveRoom = () => {
+        navigate('/')
+    }
+
     return(
         <div className="flex flex-col items-center justify-center min-h-screen w-full p-4 bg-gray-100">
-            <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
+            <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 mb-6">
                 <form className="flex flex-col space-y-4" onSubmit={handleJoinRoom}>
                     <input 
                         type="text" 
@@ -80,17 +97,32 @@ const Join = () => {
                     </button>
                 </form>
             </div>
-    
+
             {isInRoom && (
-                <div className="mt-8 w-full max-w-md bg-white rounded-lg shadow-md p-6">
+                <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 mb-6">
                     <h2 className="text-2xl font-semibold mb-4">Room Information</h2>
                     <p className="text-gray-700 mb-4">Host ID: <span className="font-medium">{hostId}</span></p>
-                    <button className="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition duration-300 ease-in-out">
+                    <button className="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition duration-300 ease-in-out mb-4">
                         Send File
+                    </button>
+                    <button
+                        onClick={handleLeaveRoom}
+                        className="w-full bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition duration-300 ease-in-out"
+                    >
+                        Leave Room
                     </button>
                 </div>
             )}
-</div>
+
+            {!isInRoom && (
+                <button
+                    onClick={handleLeaveRoom}
+                    className="mt-4 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition duration-300 ease-in-out"
+                >
+                    Back to Home
+                </button>
+            )}
+        </div>
     )
 }
 
