@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom'
 
 const Host = () => {
     const socketRef = useRef<WebSocket | null>(null)
+    const peerConnectionsRef = useRef<Map<string, { pc : RTCPeerConnection, dataChannel : RTCDataChannel }>>(new Map())
+    const selectedFilesRef = useRef<Map<string, File>>(new Map()) 
+
     const [hostId, setHostId] = useState<string>("")
-    const peerConnectionsRef = useRef<Map<string, { pc : RTCPeerConnection, dataChannel : RTCDataChannel }>>(new Map()) 
     const [members, setMembers] = useState<Array<string>>([])
     const [selectedFileNames, setSelectedFileNames] = useState<{ [key : string] : string }>({})
-    const selectedFilesRef = useRef<Map<string, File>>(new Map())
+    
     const navigate = useNavigate()
+    const iceServers = [{ urls : "stun:stun.l.google.com:19302" }]
 
     useEffect(() => {
         socketRef.current = new WebSocket('ws://localhost:8080')
@@ -34,27 +37,43 @@ const Host = () => {
                 setMembers(prev => [...prev, memberId])
                 console.log(`new member ${memberId}`)
                 
-                const pc = new RTCPeerConnection()
+                const pc = new RTCPeerConnection({ iceServers })
 
-                const dataChannel = pc.createDataChannel("fileTransfer", { ordered : true })
-                dataChannel.binaryType = "arraybuffer"
+                pc.ondatachannel = (event) => {
+                    const dataChannel = event.channel
+                    dataChannel.binaryType = "arraybuffer"
 
-                dataChannel.onopen = () => {
-                    console.log(`data channel open for member ${memberId}`)
+                    dataChannel.onopen = () => {
+                        console.log(`Data Channel open for member ${memberId}`)
+                    }
+
+                    dataChannel.onmessage = (ev) => {
+                        console.log(`recieved data from member ${memberId} : ${ev.data}`)
+                    }
+
+                    peerConnectionsRef.current.set(memberId, { pc, dataChannel })
+
                 }
 
-                dataChannel.onmessage = (e) => {
-                    console.log(`Recieved data from member ${memberId} : ${e.data}`)
-                }
+                // const dataChannel = pc.createDataChannel("fileTransfer", { ordered : true })
+                // dataChannel.binaryType = "arraybuffer"
 
-                peerConnectionsRef.current.set(memberId, { pc, dataChannel })
+                // dataChannel.onopen = () => {
+                //     console.log(`data channel open for member ${memberId}`)
+                //     dataChannel.send("test message from host")
+                // }
+
+                // dataChannel.onmessage = (e) => {
+                //     console.log(`Recieved data from member ${memberId} : ${e.data}`)
+                // }
+
+                // peerConnectionsRef.current.set(memberId, { pc, dataChannel })
 
                 pc.onicecandidate = (e) => {
                     console.log(`sending new ice candidate ${e.candidate}`)
                     if(e.candidate) {
-                        socket.send(JSON.stringify({ type : "ice-candidate", candidate : e.candidate, id : memberId }))
+                        socket.send(JSON.stringify({ type : "ice-candidate", candidate : e.candidate, targetId : memberId }))
                     }
-
                 }
                 try {
                     await pc.setRemoteDescription(offer)
@@ -66,7 +85,7 @@ const Host = () => {
                     socket.send(JSON.stringify({ error : "error in setting creating answer" }))
                 }
             } else if(message.type === 'ice-candidate') {
-                const pc = peerConnectionsRef.current.get(message.id)?.pc
+                const pc = peerConnectionsRef.current.get(message.senderId)?.pc
                 pc?.addIceCandidate(new RTCIceCandidate(message.candidate))
                 console.log(`recieved new ice candidate ${message.candidate}`)
             } else if(message.type === 'disconnected') {

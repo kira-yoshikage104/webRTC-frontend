@@ -6,11 +6,23 @@ const Join = () => {
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
     const dataChannelRef = useRef<RTCDataChannel | null>(null)
     const selectedFileRef = useRef<File | null>(null)
+
     const [selectedFileName, setSelectedFileName] = useState<string>("")
     const [isInRoom, setIsInRoom] = useState(false)
     const [hostId, setHostId] = useState<string>("")
     const [userId, setUserId] = useState<string>("")
+
     const navigate = useNavigate()
+    const iceServers = [{ urls : "stun:stun.l.google.com:19302" }]
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if(dataChannelRef.current) {
+                console.log(`data channel state : ${dataChannelRef.current.readyState}`)
+            }
+        }, 2000)
+        return () => clearInterval(interval)
+    }, [])
 
     useEffect(() => {
         socketRef.current = new WebSocket('ws://localhost:8080')
@@ -60,32 +72,94 @@ const Join = () => {
         if(!socket) {
             return;
         }
-        peerConnectionRef.current = new RTCPeerConnection()
+        peerConnectionRef.current = new RTCPeerConnection({ iceServers })
         const pc = peerConnectionRef.current
 
-        pc.ondatachannel = (e) => {
-            const channel = e.channel
-            channel.binaryType = "arraybuffer"
-            channel.onopen = () => {
-                console.log(`data channel open`)
+        const dataChannel = pc.createDataChannel("fileTransfer", { ordered : true })
+        dataChannel.binaryType = "arraybuffer"
+        dataChannelRef.current = dataChannel
+
+        dataChannel.onopen = () => {
+            console.log('data channel opened')
+        }
+
+        let recievedBuffers : ArrayBuffer[] = []
+        let recievedBytes = 0
+
+        dataChannel.onmessage = (ev) => {
+            if (typeof ev.data === "string" && ev.data === "EOF") {
+                const blob = new Blob(recievedBuffers);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "received_file";
+                a.click();
+                recievedBuffers = [];
+                recievedBytes = 0;
+                console.log("File transfer complete");
+            } else if (ev.data instanceof ArrayBuffer) {
+                recievedBuffers.push(ev.data);
+                recievedBytes += ev.data.byteLength;
+                console.log(`Received chunk (${ev.data.byteLength} bytes) Total: ${recievedBytes}`);
             }
-            channel.onmessage = (event) => {
-                console.log(`recieved data ${event.data}`)
-            }
-            dataChannelRef.current = channel
+        }
+        // pc.ondatachannel = (e) => {
+        //     const channel = e.channel
+        //     channel.binaryType = "arraybuffer"
+        //     dataChannelRef.current = channel
+
+        //     console.log(`Data channel recived : ${channel.label}`)
+
+        //     channel.onopen = () => {
+        //         console.log(`data channel open`)
+        //     }
+            
+        //     let recievedBuffers : ArrayBuffer[] = []
+        //     let recievedBytes = 0
+
+        //     channel.onmessage = (ev) => {
+        //         console.log(`recieved data ${ev.data}`)
+        //         if(typeof ev.data === "string") {
+        //             if(ev.data === "EOF") {
+        //                 console.log("file transfer complete")
+        //                 const blob = new Blob(recievedBuffers)
+        //                 const url = URL.createObjectURL(blob)
+        //                 const a = document.createElement("a")
+        //                 a.href = url
+        //                 a.download = "recieved_file"
+        //                 a.click()
+        //                 recievedBuffers = []
+        //                 recievedBytes = 0
+        //             }
+        //         } else if(ev.data instanceof ArrayBuffer) {
+        //             recievedBuffers.push(ev.data)
+        //             recievedBytes += ev.data.byteLength
+        //             console.log(`recieved chunk (${ev.data.byteLength} bytes) total : ${recievedBytes}`)
+        //         }
+        //     }
+
+        //     channel.onerror = (err) => {
+        //         console.error("data channel error", err)
+        //     }
+        // }
+        dataChannel.onerror = (err) => {
+            console.error("data channel error : ", err)
         }
 
         pc.onicecandidate = (e) => {
             console.log(`sending new ice candidate ${e.candidate}`)
             if(e.candidate) {
-                socket.send(JSON.stringify({ type : "ice-candidate", candidate : e.candidate }))
+                socket.send(JSON.stringify({ type : "ice-candidate", candidate : e.candidate, targetId : hostId }))
             }
         }
-
-        const offer = await pc.createOffer()
-        await pc.setLocalDescription(offer)
-        socket.send(JSON.stringify({ type : 'join-room', hostId, offer}))
-        console.log(`offer sent ${JSON.stringify(offer)}`)
+        try {
+            const offer = await pc.createOffer()
+            await pc.setLocalDescription(offer)
+            socket.send(JSON.stringify({ type : 'join-room', hostId, offer}))
+            console.log(`offer sent ${JSON.stringify(offer)}`)
+        } catch(err) {
+            console.error("error creating offer", err)
+        }
     }
 
     const sendFileOverChannel = (file : File, dataChannel : RTCDataChannel) => {
