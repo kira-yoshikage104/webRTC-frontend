@@ -103,45 +103,7 @@ const Join = () => {
                 console.log(`Received chunk (${ev.data.byteLength} bytes) Total: ${recievedBytes}`);
             }
         }
-        // pc.ondatachannel = (e) => {
-        //     const channel = e.channel
-        //     channel.binaryType = "arraybuffer"
-        //     dataChannelRef.current = channel
 
-        //     console.log(`Data channel recived : ${channel.label}`)
-
-        //     channel.onopen = () => {
-        //         console.log(`data channel open`)
-        //     }
-            
-        //     let recievedBuffers : ArrayBuffer[] = []
-        //     let recievedBytes = 0
-
-        //     channel.onmessage = (ev) => {
-        //         console.log(`recieved data ${ev.data}`)
-        //         if(typeof ev.data === "string") {
-        //             if(ev.data === "EOF") {
-        //                 console.log("file transfer complete")
-        //                 const blob = new Blob(recievedBuffers)
-        //                 const url = URL.createObjectURL(blob)
-        //                 const a = document.createElement("a")
-        //                 a.href = url
-        //                 a.download = "recieved_file"
-        //                 a.click()
-        //                 recievedBuffers = []
-        //                 recievedBytes = 0
-        //             }
-        //         } else if(ev.data instanceof ArrayBuffer) {
-        //             recievedBuffers.push(ev.data)
-        //             recievedBytes += ev.data.byteLength
-        //             console.log(`recieved chunk (${ev.data.byteLength} bytes) total : ${recievedBytes}`)
-        //         }
-        //     }
-
-        //     channel.onerror = (err) => {
-        //         console.error("data channel error", err)
-        //     }
-        // }
         dataChannel.onerror = (err) => {
             console.error("data channel error : ", err)
         }
@@ -224,66 +186,136 @@ const Join = () => {
         navigate('/')
     }
 
+    const copyToClipboard = (text : string) => {
+        navigator.clipboard.writeText(text)
+          .then(() => {
+            alert("copied to clipboard")
+          })
+          .catch((err) => {
+            console.error("failed to copy", err)
+            alert("failed to copy to clipboard")
+          })
+    }
+
     return(
-        <div className="flex flex-col items-center justify-center min-h-screen w-full p-4 bg-gray-100">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 mb-6">
-        <form className="flex flex-col space-y-4" onSubmit={handleJoinRoom}>
-          <input 
-            type="text" 
-            placeholder="Enter host ID"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={hostId}
-            onChange={e => setHostId(e.target.value)}
-            required
-          />
-          <button
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isInRoom}
-          >
-            Join Room
-          </button>
-        </form>
-      </div>
-
-      {isInRoom && (
+    <div className="flex flex-col items-center justify-center min-h-screen w-full p-4 bg-gray-100">
+        {/* Join Room Form */}
         <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Room Information</h2>
-          <p className="text-gray-700 mb-4">Host ID: <span className="font-medium">{hostId}</span></p>
-          <div className="flex space-x-2 mb-4">
-            <button 
-              onClick={handleSelectFile} 
-              className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out"
-            >
-              Select File
-            </button>
-            <button 
-              onClick={handleSendFile}
-              className="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition duration-300 ease-in-out"
-            >
-              Send File
-            </button>
-          </div>
-          {/* Display selected file name */}
-          {selectedFileName && (
-            <p className="mb-4 text-sm text-gray-600">{selectedFileName}</p>
-          )}
-          <button
-            onClick={handleLeaveRoom}
-            className="w-full bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition duration-300 ease-in-out"
-          >
-            Leave Room
-          </button>
+            <form className="flex flex-col space-y-4" onSubmit={handleJoinRoom}>
+                <input
+                    type="text"
+                    placeholder="Enter host ID"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={hostId}
+                    onChange={(e) => setHostId(e.target.value)}
+                    required
+                />
+                <button
+                    className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isInRoom}
+                >
+                    {isInRoom ? 'Joined' : 'Join Room'}
+                </button>
+            </form>
         </div>
-      )}
 
-      {!isInRoom && (
-        <button
-          onClick={handleLeaveRoom}
-          className="mt-4 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition duration-300 ease-in-out"
-        >
-          Back to Home
-        </button>
-      )}
+        {/* Room Information */}
+        {isInRoom && (
+            <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 className="text-2xl font-semibold mb-4">Room Information</h2>
+                
+                <div className="space-y-2 mb-6">
+                    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <span className="text-gray-600">Host ID:</span>
+                        <div className="flex items-center gap-2">
+                            <span className="font-mono text-blue-600">{hostId}</span>
+                            <button
+                                onClick={() => copyToClipboard(hostId)}
+                                className="p-1.5 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                                title="Copy Host ID"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <span className="text-gray-600">Your ID:</span>
+                        <div className="flex items-center gap-2">
+                            <span className="font-mono text-green-600">{userId}</span>
+                            <button
+                                onClick={() => copyToClipboard(userId)}
+                                className="p-1.5 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
+                                title="Copy Your ID"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* File Transfer Section */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <span className="text-gray-600">
+                            {selectedFileName || "No file selected"}
+                        </span>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleSelectFile}
+                                className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                            >
+                                Choose File
+                            </button>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={handleSendFile}
+                        className="w-full py-2.5 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                        disabled={!selectedFileName}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                        Send File to Host
+                    </button>
+                </div>
+
+                {/* Connection Status */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Connection Status:</span>
+                        <span className={`font-medium ${dataChannelRef.current?.readyState === 'open' ? 'text-green-500' : 'text-yellow-500'}`}>
+                            {dataChannelRef.current?.readyState === 'open' ? 'Connected' : 'Connecting...'}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Leave Room Button */}
+                <button
+                    onClick={handleLeaveRoom}
+                    className="w-full mt-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                >
+                    Leave Room
+                </button>
+            </div>
+        )}
+
+        {/* Back Button */}
+        {!isInRoom && (
+            <button
+                onClick={handleLeaveRoom}
+                className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+            >
+                ← Back to Home
+            </button>
+        )}
     </div>
     )
 }
