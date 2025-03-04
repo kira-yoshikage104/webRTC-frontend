@@ -1,0 +1,26 @@
+import { createContext, useContext, useEffect, useRef } from "react";
+
+const WebSocketContext = createContext(null);
+
+export const WebSocketProvider = ({ children }) => {
+    const socketRef = useRef<WebSocket | null>(null);
+
+    useEffect(() => {
+        if (!socketRef.current) {
+            socketRef.current = new WebSocket("ws://localhost:8080");
+
+            socketRef.current.onopen = () => console.log("Connected to WebSocket");
+            socketRef.current.onerror = (error) => console.error("WebSocket error:", error);
+            socketRef.current.onmessage = (event) => console.log("Received:", JSON.parse(event.data));
+
+            return () => {
+                socketRef.current?.close();
+                console.log("WebSocket closed");
+            };
+        }
+    }, []);
+
+    return <WebSocketContext.Provider value={socketRef.current}>{children}</WebSocketContext.Provider>;
+};
+
+export const useWebSocket = () => useContext(WebSocketContext);
