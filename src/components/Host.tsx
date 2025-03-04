@@ -18,9 +18,12 @@ const Host = () => {
   const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
 
   const location = useLocation();
-  const { roomName, isPublic, genre } = location.state || {};
 
   useEffect(() => {
+    const { roomName, isPublic, genre } = location.state || {};
+    if(!location.state){
+      navigate("/");
+    }
     socketRef.current = new WebSocket("ws://localhost:8080");
     const socket = socketRef.current;
 

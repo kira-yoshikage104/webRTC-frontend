@@ -70,7 +70,7 @@ const CreateRoom = () => {
     const data = {
       roomName: roomName,
       isPublic: isPublic,
-      genre: selectedGenre,
+      genre: selectedGenre
     };
     navigate("/host", { state: data });
   };
