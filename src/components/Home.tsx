@@ -1,49 +1,49 @@
-import { useContext, createContext, useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useWebSocket } from "./WebSocketContext"; // ✅ Use the WebSocket context
 
-
-const WebSocketContext = createContext<WebSocket | null>(null);
 const Home = () => {
     const navigate = useNavigate();
-    const socketRef = useRef<WebSocket | null>(null);
+    const socket = useWebSocket(); // ✅ Get WebSocket from context
 
     useEffect(() => {
-        socketRef.current = new WebSocket("ws://localhost:8080");
+        if (!socket) return;
 
-        socketRef.current.onopen = () => {
-            console.log("Connected to WebSocket");
-        };
-
-        socketRef.current.onerror = (error) => {
-            console.error("WebSocket error:", error);
-        };
-
-        socketRef.current.onmessage = (event) => {
+        const handleMessage = (event: MessageEvent) => {    
             try {
-                const data = JSON.parse(event.data);
-                console.log("Received:", data);
+                const message = JSON.parse(event.data);
+                console.log("Received:", message);
 
-                if (data.type === "host-id") {
-                    navigate(`/room?roomId=${data.hostId}`, { state: { members: data.members } });
+                if (message.type === "roomId") {
+                    navigate(`/host?hostId=${message.hostId}&userId=${message.hostId}`);
+                    console.log("navigating")
+                }else{
+                    console.log("not navigating")
                 }
             } catch (error) {
-                console.error("Error parsing message:", error);
+                console.error("Error parsing WebSocket message:", error);
             }
         };
 
+        socket.addEventListener("message", handleMessage);
+
         return () => {
-            socketRef.current?.close();
-            console.log("WebSocket closed");
+            socket.removeEventListener("message", handleMessage);
         };
-    }, [navigate]);
+    }, [socket, navigate]);
 
     const createhandleClick = () => {
-        const socket = socketRef.current;
-        if (!socket || socket.readyState !== WebSocket.OPEN) {
-            console.error("WebSocket is not open or initialized.");
+        if (!socket) {
+            console.error("WebSocket is not initialized.");
             return;
         }
 
+        if (socket.readyState !== WebSocket.OPEN) {
+            console.error("WebSocket is not open yet. Current state:", socket.readyState);
+            return;
+        }
+
+        console.log("Sending create-room request");
         socket.send(JSON.stringify({ type: "create-room" }));
     };
 

@@ -1,88 +1,45 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
+import { useWebSocket } from './WebSocketContext';
 
 const Host = () => {
     const location = useLocation();
-    const socketRef = useRef<WebSocket | null>(null)
+    const socketRef = useWebSocket()
     const peerConnectionsRef = useRef<Map<string, { pc : RTCPeerConnection, dataChannel : RTCDataChannel }>>(new Map())
     const selectedFilesRef = useRef<Map<string, File>>(new Map()) 
-    const [userId, setUserId] = useState<string>(""); 
     const [members, setMembers] = useState<Array<string>>([])
     const [selectedFileNames, setSelectedFileNames] = useState<{ [key : string] : string }>({})
     const [SearchParams] = useSearchParams()
     const navigate = useNavigate()
     const iceServers = [{ urls : "stun:stun.l.google.com:19302" }]
     const hostId = SearchParams.get('hostId') || ""
+    const userId = SearchParams.get('userId') || ""
+
+    console.log(`user-id: ${userId}`)
   
     useEffect(() => {
-        if (location.state?.members) {
-            setMembers(location.state.members);
+        console.log("huitrdj");
+        if(!socketRef){
+            console.log("oh you're here")
+            return;
         }
-    }, [location.state]);
-    
-
-
-    useEffect(() => {
-        socketRef.current = new WebSocket('ws://localhost:8080')
-        const socket = socketRef.current
-        console.log(socket)
+        console.log("Socket state:", socketRef?.readyState);
+        // implement join room
+        if(socketRef.readyState === WebSocket.OPEN) {
+            handleWebSocketOpen()
+        }else{
+            socketRef.onopen = handleWebSocketOpen
+        }   
         
-        socket.onopen = () => {
-            console.log(`connected to websocket 8080`)
-            socket.send(JSON.stringify({type: 'get-id', hostId}))
-        }
-        
-        socket.onerror = (err) => {
+        socketRef.onerror = (err) => {
             console.error('websocket error', err)
         }
 
-        socket.onmessage = async (e) => {
+        socketRef.onmessage = async (e) => {
+            console.log("message")
             const message = JSON.parse(e.data)
             console.log(`message : ${e.data}`)
-            if (message.type === 'user-id') {
-                const userId = message.userId;
-                setUserId(userId);
-    
-                // Now create an offer before sending join-room
-                const pc = new RTCPeerConnection({ iceServers });
-    
-                // Create a DataChannel for file transfers
-                const dataChannel = pc.createDataChannel("fileTransfer");
-                dataChannel.binaryType = "arraybuffer";
-    
-                dataChannel.onopen = () => {
-                    console.log(`DataChannel is open for ${userId}`);
-                };
-    
-                pc.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        socket.send(JSON.stringify({
-                            type: "ice-candidate",
-                            candidate: event.candidate,
-                            targetId: hostId
-                        }));
-                    }
-                };
-    
-                try {
-                    const offer = await pc.createOffer();
-                    await pc.setLocalDescription(offer);
-    
-                    // Store the connection
-                    peerConnectionsRef.current.set(userId, { pc, dataChannel });
-    
-                    // Send join-room request with offer
-                    socket.send(JSON.stringify({
-                        type: 'join-room',
-                        hostId,
-                        memberId: userId,
-                        offer
-                    }));
-    
-                } catch (err) {
-                    console.error("Error creating offer:", err);
-                }
-            }  else if(message.type === 'new-member') {
+            if(message.type === 'new-member') {
                 const offer = message.offer
                 const memberId = message.memberId
                 const hostId = message.hostId       
@@ -127,7 +84,7 @@ const Host = () => {
                 pc.onicecandidate = (e) => {
                     console.log(`sending new ice candidate ${e.candidate}`)
                     if(e.candidate) {
-                        socket.send(JSON.stringify({ type : "ice-candidate", candidate : e.candidate, targetId : memberId }))
+                        socketRef.send(JSON.stringify({ type : "ice-candidate", candidate : e.candidate, targetId : memberId }))
                     }
                 }
 
@@ -135,10 +92,10 @@ const Host = () => {
                     await pc.setRemoteDescription(offer)
                     const answer = await pc.createAnswer()
                     await pc.setLocalDescription(answer)
-                    socket.send(JSON.stringify({ type : 'create-answer', answer, memberId }))
+                    socketRef.send(JSON.stringify({ type : 'join-room', answer, memberId }))
                 } catch(err) {
                     console.log("error in setting creating answer" );
-                    socket.send(JSON.stringify({ error : "error in setting creating answer" }))
+                    socketRef.send(JSON.stringify({ error : "error in setting creating answer" }))
                 }
             } else if(message.type === 'ice-candidate') {
                 const pc = peerConnectionsRef.current.get(message.senderId)?.pc
@@ -152,7 +109,7 @@ const Host = () => {
             }
         }
 
-        socket.onclose = () => {
+        socketRef.onclose = () => {
             console.log('websocket connection closed')
         }
 
@@ -163,11 +120,55 @@ const Host = () => {
             })
             pcs?.clear()
             
-            socketRef?.current?.close()
+            socketRef?.close()
             setMembers([])
             console.log(`websocket disconnected`)
         }
-    }, [])
+    }, [socketRef, hostId])
+
+    const handleWebSocketOpen = async () => {
+        if(!socketRef) return
+        console.log(`websocket connected`)
+        const pc = new RTCPeerConnection({ iceServers });
+
+        // Create a DataChannel for file transfers
+        const dataChannel = pc.createDataChannel("fileTransfer");
+        dataChannel.binaryType = "arraybuffer";
+
+        dataChannel.onopen = () => {
+            console.log(`DataChannel is open for ${userId}`);
+        };
+
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                socketRef.send(JSON.stringify({
+                    type: "ice-candidate",
+                    candidate: event.candidate,
+                    targetId: hostId
+                }));
+            }
+        };
+
+        try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+
+            // Store the connection
+            peerConnectionsRef.current.set(userId, { pc, dataChannel });
+
+            // Send join-room request with offer
+            socketRef.send(JSON.stringify({
+                type: 'join-room',
+                hostId,
+                memberId: userId,
+                offer
+            }));
+
+        } catch (err) {
+            console.error("Error creating offer:", err);
+        }
+    }
+
 
     const sendFileOverChannel = (file : File, dataChannel : RTCDataChannel) => {
         const CHUNK_SIZE = 16 * 1024

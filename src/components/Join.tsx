@@ -1,11 +1,28 @@
 import { FormEvent, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useWebSocket } from './WebSocketContext';
+
 
 const Join = () => {
 
     const [hostId, setHostId] = useState<string>("");
-
+    const [userId, setUserId] = useState<string>("");
+    const socket = useWebSocket()
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if(socket){
+            socket.send(JSON.stringify({type: "get-id", hostId: hostId, userId: userId}))
+            socket.onmessage = (event) => {
+                const message = JSON.parse(event.data)
+                if(message.type === "user-id"){
+                    setUserId(message.userId)
+                    console.log(`🔹 Received user ID: ${message.userId}`);
+                }
+            }
+        }
+    },[socket]
+    )
 
     const handleJoinRoom = (e: FormEvent) => {
         e.preventDefault();
@@ -15,7 +32,7 @@ const Join = () => {
             return;
         }
     
-        navigate(`/host?hostId=${hostId}`); // Navigate immediately
+        navigate(`/host?hostId=${hostId}&userId=${userId}`);
     };
 
     return (

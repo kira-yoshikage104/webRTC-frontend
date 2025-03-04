@@ -4,10 +4,8 @@ import Home from './components/Home'
 import Host from './components/Host'
 import Join from './components/Join'
 import './index.css'
-import { WebSocket } from "./components/WebSocketProvider"
 function App() {
   return(
-    <WebSocket
     <Routes>
       <Route path='/' element={<Layout />} >
 
