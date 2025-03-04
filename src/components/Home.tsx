@@ -14,7 +14,7 @@ const Home = () => {
                 const message = JSON.parse(event.data);
                 console.log("Received:", message);
 
-                if (message.type === "roomId") {
+                if (message.type === "room") {
                     navigate(`/host?hostId=${message.hostId}&userId=${message.hostId}`);
                     console.log("navigating")
                 }else{
