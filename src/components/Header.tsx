@@ -7,7 +7,7 @@ const Header = () => {
                 <nav>
                     <ul className="flex space-x-4">
                         <li><a href="/" className="hover:text-blue-200 transition duration-300">Home</a></li>
-                        <li><a href="/host" className="hover:text-blue-200 transition duration-300">Host</a></li>
+                        <li><a href="/createroom" className="hover:text-blue-200 transition duration-300">Host</a></li>
                         <li><a href="/join" className="hover:text-blue-200 transition duration-300">Join</a></li>
                     </ul>
                 </nav>
