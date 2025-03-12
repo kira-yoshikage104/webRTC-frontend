@@ -1,38 +1,52 @@
-import { FormEvent, useState, useEffect, useRef } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useWebSocket } from './WebSocketContext';
-
+import { useWebSocket } from "./WebSocketContext";
 
 const Join = () => {
-
     const [hostId, setHostId] = useState<string>("");
     const [userId, setUserId] = useState<string>("");
-    const socket = useWebSocket()
+    const socket = useWebSocket();
     const navigate = useNavigate();
 
+    console.log(`socket connection state is ${socket}`);
+
     useEffect(() => {
-        if(socket){
-            socket.send(JSON.stringify({type: "get-id", hostId: hostId, userId: userId}))
-            socket.onmessage = (event) => {
-                const message = JSON.parse(event.data)
-                if(message.type === "user-id"){
-                    setUserId(message.userId)
-                    console.log(`🔹 Received user ID: ${message.userId}`);
-                }
+        if (!socket || !hostId) return;
+
+        console.log("🔹 Sending get-id request");
+        socket.send(JSON.stringify({ type: "get-id", hostId }));
+
+        const handleMessage = (event: MessageEvent) => {
+            const message = JSON.parse(event.data);
+            console.log("📩 Received message:", message);
+
+            if (message.type === "user-id") {
+                setUserId(message.userId);
+                console.log(`🔹 Received user ID: ${message.userId}`);
             }
-        }
-    },[socket]
-    )
+        };
+
+        socket.addEventListener("message", handleMessage);
+
+        return () => {
+            socket.removeEventListener("message", handleMessage);
+        };
+    }, [socket, hostId]);
 
     const handleJoinRoom = (e: FormEvent) => {
         e.preventDefault();
-    
+
         if (!hostId.trim()) {
             alert("Invalid Host ID.");
             return;
         }
-    
-        navigate(`/host?hostId=${hostId}&userId=${userId}`);
+
+        if (!userId) {
+            alert("User ID is not set yet. Please wait.");
+            return;
+        }
+
+        navigate(`/room?roomId=${hostId}`, { state: { userId } });
     };
 
     return (
@@ -47,9 +61,8 @@ const Join = () => {
                         onChange={(e) => setHostId(e.target.value)}
                         required
                     />
-                    <button
-                        className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
+                    <button className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                        Join Room
                     </button>
                 </form>
             </div>

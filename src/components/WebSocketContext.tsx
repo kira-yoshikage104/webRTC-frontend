@@ -13,24 +13,30 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const [socket, setSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket("wss://p2p-file-sharing-system-rsnt.onrender.com");
+    const ws = new WebSocket("ws://localhost:5000"); // Change to your backend URL if deployed
 
-    ws.onopen = () => console.log("WebSocket connected!");
-    ws.onerror = (error) => console.error("WebSocket error:", error);
-    ws.onclose = () => console.log("WebSocket disconnected!");
+    ws.onopen = () => {
+      console.log("WebSocket connected!");
+      setSocket(ws); // Set socket only after successful connection
+    };
 
-    setSocket(ws);
+    ws.onerror = (event) => {
+      console.error("WebSocket error:", event);
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket disconnected!");
+      setSocket(null);
+    };
 
     return () => {
-      ws.close();
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+      }
     };
   }, []);
 
-  return (
-    <WebSocketContext.Provider value={socket}>
-      {children}
-    </WebSocketContext.Provider>
-  );
+  return <WebSocketContext.Provider value={socket}>{children}</WebSocketContext.Provider>;
 };
 
 // Custom Hook for WebSocket Access

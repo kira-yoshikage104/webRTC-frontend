@@ -11,7 +11,7 @@ function App() {
 
         <Route index element={<Home />} />
 
-        <Route path='host' element={<Host />} />
+        <Route path='room' element={<Host />} />
         <Route path='join' element={<Join />} />
 
       </Route>

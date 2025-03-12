@@ -9,37 +9,27 @@ const Home = () => {
     useEffect(() => {
         if (!socket) return;
 
-        const handleMessage = (event: MessageEvent) => {    
-            try {
-                const message = JSON.parse(event.data);
-                console.log("Received:", message);
-
-                if (message.type === "room") {
-                    navigate(`/host?hostId=${message.hostId}&userId=${message.hostId}`);
-                    console.log("navigating")
-                }else{
-                    console.log("not navigating")
-                }
-            } catch (error) {
-                console.error("Error parsing WebSocket message:", error);
+        // ✅ Define the WebSocket message handler
+        const handleMessage = (event: MessageEvent) => {
+            const message = JSON.parse(event.data);
+            if (message.type === "host-id") {
+                console.log("first log of the day")
+                navigate(`/room?roomId=${message.hostId}`, {state: {userId: message.hostId}});
             }
         };
 
+        // ✅ Attach the event listener once
         socket.addEventListener("message", handleMessage);
 
         return () => {
+            // ✅ Cleanup the event listener when component unmounts
             socket.removeEventListener("message", handleMessage);
         };
     }, [socket, navigate]);
 
     const createhandleClick = () => {
         if (!socket) {
-            console.error("WebSocket is not initialized.");
-            return;
-        }
-
-        if (socket.readyState !== WebSocket.OPEN) {
-            console.error("WebSocket is not open yet. Current state:", socket.readyState);
+            console.error("WebSocket is not connected.");
             return;
         }
 
@@ -73,3 +63,4 @@ const Home = () => {
 };
 
 export default Home;
+// The Home component is the main entry point of the application. It allows users to create a new room or join an existing room. When the user clicks the "Create Room" button, the component sends a create-room request to the server. When the user clicks the "Join Room" button, the component navigates to the Join component.    
