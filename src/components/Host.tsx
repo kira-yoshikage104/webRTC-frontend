@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, useNavigate, useLocation, data } from 'react-router-dom'
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { useWebSocket } from './WebSocketContext';
 
 const Host = () => {
-    const location = useLocation();
     const socketRef = useWebSocket()
     const peerConnectionsRef = useRef<Map<string, { pc : RTCPeerConnection, dataChannel : RTCDataChannel | null }>>(new Map())
     const selectedFilesRef = useRef<Map<string, File>>(new Map()) 
@@ -91,7 +90,7 @@ const Host = () => {
                     return prevMembers
                 })
                 if(peerConnectionsRef.current.has(memberId)){
-                    await peerConnectionsRef.current.get(memberId)?.pc.setRemoteDescription(message.offer);
+                    await peerConnectionsRef.current.get(memberId)?.pc.setRemoteDescription(offer);
                     return;
                 }
                 const hostId = message.roomId
