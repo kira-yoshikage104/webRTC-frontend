@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
+interface chatMessageInterface{
+  senderId : string;
+  text : string;
+  timestamp : number;
+}
+
 const Host = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const peerConnectionsRef = useRef<
@@ -13,6 +19,8 @@ const Host = () => {
   const [selectedFileNames, setSelectedFileNames] = useState<{
     [key: string]: string;
   }>({});
+  const [chatMessages, setChatMessages] = useState<Array<chatMessageInterface>>([]);
+  const [newMessage, setNewMessage] = useState<string>("");
 
   const navigate = useNavigate();
   const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
@@ -119,6 +127,10 @@ const Host = () => {
         peerConnectionsRef.current.get(memberId)?.pc?.close();
         peerConnectionsRef.current.delete(memberId);
         setMembers((prev) => prev.filter((member) => member !== memberId));
+      } else if(message.type === "chat-message") {
+        const { senderId, text, timestamp} = message;
+        console.log(`${senderId} sent message : ${text}`) 
+        setChatMessages(prev => [...prev, { senderId, text, timestamp }]);
       }
     };
 
@@ -215,6 +227,14 @@ const Host = () => {
         alert("failed to copy to clipboard");
       });
   };
+
+  const sendMessage = () => {
+    if(newMessage.trim() && socketRef.current) {
+      const servSock = socketRef.current;
+      servSock.send(JSON.stringify({ type : "chat-message", text : newMessage.trim() }));
+    }
+    setNewMessage("");
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen w-full p-4 bg-gray-100">
@@ -340,6 +360,43 @@ const Host = () => {
           </ul>
         )}
       </div>
+
+      <div className="w-full max-w-4xl bg-white rounded-lg shadow-md p-6 mb-8">
+    <h2 className="text-2xl font-semibold mb-4 text-gray-800">Chat</h2>
+    
+    {/* Chat Messages */}
+    <div className="h-64 overflow-y-auto mb-4 border rounded-lg p-3 bg-gray-50">
+        {chatMessages.map((msg, index) => (
+            <div key={index} className={`mb-3 ${msg.senderId === hostId ? 'text-right' : ''}`}>
+                <div className={`inline-block p-2 rounded-lg ${msg.senderId === hostId ? 'bg-blue-100' : 'bg-green-100'}`}>
+                    <p className="text-sm text-gray-600">{msg.senderId === hostId ? "You" : msg.senderId}</p>
+                    <p className="text-gray-800">{msg.text}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                        {new Date(msg.timestamp).toLocaleTimeString()}
+                    </p>
+                </div>
+            </div>
+        ))}
+    </div>
+    
+    {/* Message Input */}
+    <div className="flex gap-2">
+        <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type a message..."
+              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+        />
+        <button
+              onClick={sendMessage}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+            Send
+        </button>
+      </div>
+    </div>
 
       {/* Close Room Button */}
       <button
