@@ -110,7 +110,7 @@ const Host = () => {
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           socket.send(
-            JSON.stringify({ type: "create-answer", answer, memberId })
+            JSON.stringify({ type: "create-answer", answer, targetId : memberId })
           );
         } catch (err) {
           console.log("error in setting creating answer");
