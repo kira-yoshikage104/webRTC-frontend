@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import Toggleable from "./Toggleable";
 
 interface chatMessageInterface{
   senderId : string;
@@ -13,6 +14,7 @@ const Host = () => {
     Map<string, { pc: RTCPeerConnection; dataChannel: RTCDataChannel }>
   >(new Map());
   const selectedFilesRef = useRef<Map<string, File>>(new Map());
+  const userIdToUsernameRef = useRef<Map<string, string>>(new Map());
 
   const [hostId, setHostId] = useState<string>("");
   const [members, setMembers] = useState<Array<string>>([]);
@@ -28,7 +30,7 @@ const Host = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const { roomName, isPublic, genre } = location.state || {};
+    const { roomName, isPublic, genre, username } = location.state || {};
     if(!location.state){
       navigate("/");
     }
@@ -38,7 +40,7 @@ const Host = () => {
     socket.onopen = () => {
       console.log(`connected to websocket 8080`);
       socket.send(
-        JSON.stringify({ type: "create-room", roomName, genre, isPublic })
+        JSON.stringify({ type: "create-room", roomName, genre, isPublic, username })
       );
     };
 
@@ -52,8 +54,9 @@ const Host = () => {
       if (message.type === "host-id") {
         setHostId(message.hostId);
       } else if (message.type === "new-member") {
-        const { offer, memberId } = message;
+        const { offer, memberId, username } = message;
 
+        if(username) userIdToUsernameRef.current.set(memberId, username);
         setMembers((prev) => [...prev, memberId]);
         console.log(`new member ${memberId}`);
 
@@ -301,9 +304,12 @@ const Host = () => {
                         />
                       </svg>
                     </div>
-                    <span className="font-mono text-gray-700">{memberId}</span>
+                    {/* <span className="font-mono text-gray-700">{memberId}</span> */}
+                    <Toggleable 
+                      username={userIdToUsernameRef.current.get(memberId) || "Unknown username"} 
+                      userId={memberId} 
+                    />
                   </div>
-
                   {/* File Actions */}
                   <div className="flex items-center gap-2">
                     <button
@@ -369,7 +375,14 @@ const Host = () => {
         {chatMessages.map((msg, index) => (
             <div key={index} className={`mb-3 ${msg.senderId === hostId ? 'text-right' : ''}`}>
                 <div className={`inline-block p-2 rounded-lg ${msg.senderId === hostId ? 'bg-blue-100' : 'bg-green-100'}`}>
-                    <p className="text-sm text-gray-600">{msg.senderId === hostId ? "You" : msg.senderId}</p>
+                    <p className="text-sm text-gray-600">
+                      {msg.senderId === hostId ? "You" : 
+                        <Toggleable 
+                          username={userIdToUsernameRef.current.get(msg.senderId) || "unknown username"} 
+                          userId={msg.senderId} 
+                        />
+                      }
+                    </p>
                     <p className="text-gray-800">{msg.text}</p>
                     <p className="text-xs text-gray-500 mt-1">
                         {new Date(msg.timestamp).toLocaleTimeString()}

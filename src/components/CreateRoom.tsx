@@ -57,6 +57,7 @@ const CreateRoom = () => {
   const [roomName, setRoomName] = useState<string>("");
   const [isPublic, setIsPublic] = useState<boolean>(true);
   const [selectedGenre, setSelectedGenre] = useState<string>("Select a genre");
+  const [username, setUsername] = useState<string>("");
 
   const handleClick = () => {
     if (!roomName.trim()) {
@@ -70,7 +71,8 @@ const CreateRoom = () => {
     const data = {
       roomName: roomName,
       isPublic: isPublic,
-      genre: selectedGenre
+      genre: selectedGenre,
+      username
     };
     navigate("/host", { state: data });
   };
@@ -119,6 +121,19 @@ const CreateRoom = () => {
           <p className="text-sm font-light">
             This helps users find the type of content they're looking for.
           </p>
+        </div>
+        <div className="form-group">
+          <label htmlFor="username">Display Name:</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            placeholder="Enter your display name"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            className="w-full px-4 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
         <button
           className="bg-blue-500 text-white w-full py-4 text-xl font-semibold rounded-lg shadow-md hover:bg-blue-600 transition duration-300 ease-in-out"

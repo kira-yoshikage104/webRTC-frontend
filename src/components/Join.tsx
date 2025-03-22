@@ -1,5 +1,6 @@
 import { FormEvent, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import Toggleable from "./Toggleable";
 
 interface chatMessageInterface{
   senderId : string;
@@ -14,12 +15,14 @@ const Join = () => {
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const pendingIceCandidatesRef = useRef<Map<string, RTCIceCandidate[]>>(new Map());
   const selectedFileRef = useRef<Map<string, File | null>>(new Map());
+  const userIdToUsernameRef = useRef<Map<string, string>>(new Map());
 
   const [roomMembers, setRoomMembers] = useState<string[]>([]);
   const [peerFileNames, setPeerFileNames] = useState<{[key : string] : string}>({});
   // const [selectedFileName, setSelectedFileName] = useState<string>("");
   const [isInRoom, setIsInRoom] = useState(false);
   const [hostId, setHostId] = useState<string>("");
+  const [username, setUsername] = useState<string>("")
   const [userId, setUserId] = useState<string>("");
   const [enterID, setEnterID] = useState(true);
   const [publicRoom, setPublicRoom] = useState(false);
@@ -60,7 +63,8 @@ const Join = () => {
         setUserId(message.userId);
         console.log(`set user id to ${message.userId}`);
       } else if(message.type === "new-member") {
-        const { memberId } = message;
+        const { memberId, username } = message;
+        if(username) userIdToUsernameRef.current.set(memberId, username);
         console.log(`member ${memberId} joined!`);
         setRoomMembers(prev => [...prev, memberId]);
       } else if (message.type === "create-answer") {
@@ -72,10 +76,13 @@ const Join = () => {
           `answer recieved and set remote description ${message.answer} for ${senderId}`
         );
       } else if (message.type === "room-members") {
-        const { members } = message;
-        setRoomMembers(members);
-
-        members.forEach((memberId : string) => {
+        const { members } : { members : { memberId : string, username : string}[] } = message;
+        const memberIds = members.map(member => {
+          userIdToUsernameRef.current.set(member.memberId, member.username);
+          return member.memberId;
+        });
+        setRoomMembers(memberIds);
+        memberIds.forEach((memberId : string) => {
           initiatePeerConnection(memberId);
         })
       } else if (message.type === "peer-connection-offer") {
@@ -228,13 +235,15 @@ const Join = () => {
 
   const handleJoinRoom = async (e: FormEvent) => {
     e.preventDefault();
+    if(!username.trim()) {
+      alert("please enter a display name");
+      return;
+    }
     const socket = socketRef.current;
     if (!socket) {
       return;
     }
     const pc = new RTCPeerConnection({ iceServers });
-    // peerConnectionRef.current = new RTCPeerConnection({ iceServers });
-    // const pc = peerConnectionRef.current;
 
     const dataChannel = pc.createDataChannel("fileTransfer", { ordered: true });
     dataChannel.binaryType = "arraybuffer";
@@ -288,7 +297,7 @@ const Join = () => {
     try {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      socket.send(JSON.stringify({ type: "join-room", targetId : hostId, offer }));
+      socket.send(JSON.stringify({ type: "join-room", targetId : hostId, offer, username }));
       console.log(`offer sent ${JSON.stringify(offer)} to ${hostId}`);
     } catch (err) {
       console.error("error creating offer", err);
@@ -481,6 +490,16 @@ const Join = () => {
               onChange={(e) => setHostId(e.target.value)}
               required
             />
+            <label htmlFor="username">Display Name:</label>
+            <input
+              type="text"
+              id="username"
+              placeholder="Enter your display name"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
             <button
               className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isInRoom}
@@ -542,7 +561,10 @@ const Join = () => {
               <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
                 <span className="text-gray-600">Host ID:</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-blue-600">{hostId}</span>
+                  <Toggleable 
+                    username={userIdToUsernameRef.current.get(hostId) || "Host"} 
+                    userId={hostId} 
+                  />
                   <button
                     onClick={() => copyToClipboard(hostId)}
                     className="p-1.5 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
@@ -671,7 +693,10 @@ const Join = () => {
                               />
                             </svg>
                           </div>
-                          <span className="font-mono text-sm text-gray-700">{memberId}</span>
+                          <Toggleable 
+                            username={userIdToUsernameRef.current.get(memberId) || "unknown username"} 
+                            userId={memberId} 
+                          />
                         </div>
                       </div>
                       
@@ -725,7 +750,15 @@ const Join = () => {
                   <div className={`inline-block p-2 rounded-lg ${msg.senderId === userId ? 'bg-blue-100' : 'bg-green-100'}`}>
                     <p className="text-sm text-gray-600">
                       {msg.senderId === userId ? "You" : 
-                      msg.senderId === hostId ? "Host" : msg.senderId}
+                      <Toggleable 
+                        username={
+                          msg.senderId === hostId 
+                            ? userIdToUsernameRef.current.get(hostId) || "Host"
+                            : userIdToUsernameRef.current.get(msg.senderId) || "unknown Username"
+                        } 
+                        userId={msg.senderId} 
+                      />
+                      }
                     </p>
                     <p className="text-gray-800">{msg.text}</p>
                     <p className="text-xs text-gray-500 mt-1">
