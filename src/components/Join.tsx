@@ -459,25 +459,26 @@ const Join = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen w-full p-4 bg-gray-100">
       {!isInRoom && (
-        <div className="flex w-[25rem] max-w-md mb-6">
-          <button
-            className={`w-full p-2 text-lg transition ${
-              enterID ? "bg-blue-500 text-white" : "bg-gray-200"
-            }`}
-            onClick={enterRoomID}
-          >
-            Enter Room ID
-          </button>
-          <button
-            className={`w-full p-2 text-lg transition ${
-              publicRoom ? "bg-blue-500 text-white" : "bg-gray-200"
-            }`}
-            onClick={showPublicRoom}
-          >
-            Public Rooms
-          </button>
-        </div>
+      <div className="flex w-[25rem] max-w-md mb-6">
+        <button
+          className={`w-full p-2 text-lg transition ${
+            enterID ? "bg-blue-500 text-white" : "bg-gray-200"
+          }`}
+          onClick={enterRoomID}
+        >
+          Enter Room ID
+        </button>
+        <button
+          className={`w-full p-2 text-lg transition ${
+            publicRoom ? "bg-blue-500 text-white" : "bg-gray-200"
+          }`}
+          onClick={showPublicRoom}
+        >
+          Public Rooms
+        </button>
+      </div>
       )}
+  
       {/* Join Room Form */}
       {enterID && !isInRoom && (
         <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 mb-6">
@@ -490,7 +491,7 @@ const Join = () => {
               onChange={(e) => setHostId(e.target.value)}
               required
             />
-            <label htmlFor="username">Display Name:</label>
+            <label htmlFor="username" className="text-gray-700 font-medium">Display Name:</label>
             <input
               type="text"
               id="username"
@@ -509,6 +510,7 @@ const Join = () => {
           </form>
         </div>
       )}
+  
       {/* Display Public Rooms */}
       {publicRoom && !isInRoom && (
         <div className="w-full max-w-2xl bg-white rounded-lg shadow-md p-6">
@@ -532,7 +534,7 @@ const Join = () => {
                       <td className="border p-2">{room.users + 1}</td>
                       <td className="border p-2">
                         <button
-                          className="bg-blue-500 text-white p-2 w-[4rem] rounded-md"
+                          className="bg-blue-500 text-white p-2 w-[4rem] rounded-md hover:bg-blue-600 transition"
                           onClick={(e) => joinRoom(room.id, e)}
                         >
                           Join
@@ -552,199 +554,194 @@ const Join = () => {
           </table>
         </div>
       )}
+  
       {/* Room Information */}
       {isInRoom && (
-        <>
-          <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-2xl font-semibold mb-4">Room Information</h2>
-            <div className="space-y-2 mb-6">
-              <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                <span className="text-gray-600">Host ID:</span>
-                <div className="flex items-center gap-2">
-                  <Toggleable 
-                    username={userIdToUsernameRef.current.get(hostId) || "Host"} 
-                    userId={hostId} 
-                  />
-                  <button
-                    onClick={() => copyToClipboard(hostId)}
-                    className="p-1.5 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
-                    title="Copy Host ID"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-blue-600"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                      <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                <span className="text-gray-600">Your ID:</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-green-600">{userId}</span>
-                  <button
-                    onClick={() => copyToClipboard(userId)}
-                    className="p-1.5 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
-                    title="Copy Your ID"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-green-600"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                      <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-  
-            {/* Connection Status */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Connection Status:</span>
-                <span
-                  className={`font-medium ${
-                    dataChannelRef.current?.readyState === "open"
-                      ? "text-green-500"
-                      : "text-yellow-500"
-                  }`}
-                >
-                  {dataChannelRef.current?.readyState === "open"
-                    ? "Connected"
-                    : "Connecting..."}
-                </span>
-              </div>
-            </div>
-            
-            {/* Host File Transfer Section */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <h3 className="text-xl font-semibold mb-4">Send File to Host</h3>
-              <div className="space-y-4">
+  <div className="w-full max-w-7xl mx-auto px-4">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Room Information Card - Full width on mobile, 1/3 width on desktop */}
+      <div className="lg:col-span-3">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-2xl font-semibold mb-4">Room Information</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+              <span className="text-gray-600">Host ID:</span>
+              <div className="flex items-center gap-2">
+                <Toggleable 
+                  username={userIdToUsernameRef.current.get(hostId) || "Host"} 
+                  userId={hostId} 
+                />
                 <button
-                  onClick={() => handleSelectFile(hostId)}
-                  className="w-full px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                  onClick={() => copyToClipboard(hostId)}
+                  className="p-1.5 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                  title="Copy Host ID"
                 >
-                  Choose File
-                </button>
-                {peerFileNames[hostId] && (
-                  <div className="text-sm text-gray-600">
-                    Selected: {peerFileNames[hostId]}
-                  </div>
-                )}
-                <button
-                  onClick={() => handleSendFile(hostId)}
-                  className="w-full py-2.5 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
-                  disabled={!peerFileNames[hostId]}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                   </svg>
-                  Send File to Host
                 </button>
               </div>
             </div>
-  
-            {/* Leave Room Button */}
+            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+              <span className="text-gray-600">Your ID:</span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-green-600">{userId}</span>
+                <button
+                  onClick={() => copyToClipboard(userId)}
+                  className="p-1.5 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
+                  title="Copy Your ID"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Connection Status */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500">Connection Status:</span>
+              <span
+                className={`font-medium ${
+                  dataChannelRef.current?.readyState === "open"
+                    ? "text-green-500"
+                    : "text-yellow-500"
+                }`}
+              >
+                {dataChannelRef.current?.readyState === "open"
+                  ? "Connected"
+                  : "Connecting..."}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Two-column layout for file transfer and chat on desktop */}
+      <div className="lg:col-span-2">
+        {/* Host File Transfer Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h3 className="text-xl font-semibold mb-4">Send File to Host</h3>
+          <div className="space-y-4">
             <button
-              onClick={handleLeaveRoom}
-              className="w-full mt-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+              onClick={() => handleSelectFile(hostId)}
+              className="w-full px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
             >
-              Leave Room
+              Choose File
+            </button>
+            {peerFileNames[hostId] && (
+              <div className="text-sm text-gray-600">
+                Selected: {peerFileNames[hostId]}
+              </div>
+            )}
+            <button
+              onClick={() => handleSendFile(hostId)}
+              className="w-full py-2.5 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+              disabled={!peerFileNames[hostId]}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Send File to Host
             </button>
           </div>
-  
-          {/* Room Members Section */}
-          {roomMembers.length > 0 && (
-            <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 mb-6">
-              <h2 className="text-2xl font-semibold mb-4">Room Members</h2>
-              <div className="space-y-4">
-                {roomMembers.map((memberId) => (
-                  memberId !== userId && memberId !== hostId && (
-                    <div key={memberId} className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5 text-blue-500"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </div>
-                          <Toggleable 
-                            username={userIdToUsernameRef.current.get(memberId) || "unknown username"} 
-                            userId={memberId} 
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="mt-3 space-y-3">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleSelectFile(memberId)}
-                            className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex-1"
+        </div>
+
+        {/* Room Members Section */}
+        {roomMembers.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 className="text-2xl font-semibold mb-4">Room Members</h2>
+            <div className="space-y-4">
+              {roomMembers.map((memberId) => (
+                memberId !== userId && memberId !== hostId && (
+                  <div key={memberId} className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 text-blue-500"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
                           >
-                            Select File
-                          </button>
-                          <button
-                            onClick={() => sendFileToPeer(memberId)}
-                            className="px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600 flex-1"
-                            disabled={!peerFileNames[memberId]}
-                          >
-                            Send File
-                          </button>
+                            <path
+                              fillRule="evenodd"
+                              d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
                         </div>
-                        {peerFileNames[memberId] && (
-                          <p className="text-sm text-gray-600">
-                            Selected: {peerFileNames[memberId]}
-                          </p>
-                        )}
-                        <div className="text-xs text-gray-500 mt-1">
-                          <span className={`${
-                            peerConnectionRef.current.get(memberId)?.dataChannel?.readyState === "open"
-                              ? "text-green-500"
-                              : "text-yellow-500"
-                          }`}>
-                            {peerConnectionRef.current.get(memberId)?.dataChannel?.readyState === "open"
-                              ? "Connected"
-                              : "Connecting..."}
-                          </span>
-                        </div>
+                        <Toggleable 
+                          username={userIdToUsernameRef.current.get(memberId) || "Unknown Member"} 
+                          userId={memberId} 
+                        />
                       </div>
                     </div>
-                  )
-                ))}
-              </div>
+                    
+                    <div className="mt-3 space-y-3">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleSelectFile(memberId)}
+                          className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex-1"
+                        >
+                          Select File
+                        </button>
+                        <button
+                          onClick={() => sendFileToPeer(memberId)}
+                          className="px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600 flex-1"
+                          disabled={!peerFileNames[memberId]}
+                        >
+                          Send File
+                        </button>
+                      </div>
+                      {peerFileNames[memberId] && (
+                        <p className="text-sm text-gray-600">
+                          Selected: {peerFileNames[memberId]}
+                        </p>
+                      )}
+                      <div className="text-xs text-gray-500 mt-1">
+                        <span className={`${
+                          peerConnectionRef.current.get(memberId)?.dataChannel?.readyState === "open"
+                            ? "text-green-500"
+                            : "text-yellow-500"
+                        }`}>
+                          {peerConnectionRef.current.get(memberId)?.dataChannel?.readyState === "open"
+                            ? "Connected"
+                            : "Connecting..."}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              ))}
             </div>
-          )}
-  
-          {/* Chat Section */}
-          <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Chat</h2>
-            
-            <div className="h-48 overflow-y-auto mb-4 border rounded-lg p-3 bg-gray-50">
+          </div>
+        )}
+
+        {/* Leave Room Button */}
+        <button
+          onClick={handleLeaveRoom}
+          className="w-full mb-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+        >
+          Leave Room
+        </button>
+      </div>
+
+      {/* Chat Section */}
+      <div className="lg:col-span-1">
+        <div className="bg-white rounded-lg shadow-md p-6 h-full">
+          <h2 className="text-xl font-semibold mb-4">Chat</h2>
+          
+          <div className="h-[400px] lg:h-[600px] flex flex-col">
+            <div className="flex-1 overflow-y-auto mb-4 border rounded-lg p-3 bg-gray-50">
               {chatMessages.map((msg, index) => (
                 <div key={index} className={`mb-3 ${msg.senderId === userId ? 'text-right' : ''}`}>
                   <div className={`inline-block p-2 rounded-lg ${msg.senderId === userId ? 'bg-blue-100' : 'bg-green-100'}`}>
@@ -754,7 +751,7 @@ const Join = () => {
                         username={
                           msg.senderId === hostId 
                             ? userIdToUsernameRef.current.get(hostId) || "Host"
-                            : userIdToUsernameRef.current.get(msg.senderId) || "unknown Username"
+                            : userIdToUsernameRef.current.get(msg.senderId) || "Unknown Member"
                         } 
                         userId={msg.senderId} 
                       />
@@ -786,9 +783,13 @@ const Join = () => {
               </button>
             </div>
           </div>
-        </>
+        </div>
+      </div>
+    </div>
+  </div>
       )}
-  
+
+
       {/* Back Button */}
       {!isInRoom && (
         <button

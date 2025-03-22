@@ -241,7 +241,7 @@ const Host = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen w-full p-4 bg-gray-100">
-      {/* Host ID Section */}
+    {/* Host ID Section */}
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-md p-6 mb-8">
         <div className="flex flex-col items-center mb-6">
           <h1 className="text-3xl font-semibold mb-4 text-gray-800">
@@ -273,7 +273,7 @@ const Host = () => {
         </div>
       </div>
 
-      {/* Connected Members Section */}
+    {/* Connected Members Section */}
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-md p-6 mb-8">
         <h2 className="text-2xl font-semibold mb-6 text-gray-800">
           Connected Members
@@ -304,7 +304,6 @@ const Host = () => {
                         />
                       </svg>
                     </div>
-                    {/* <span className="font-mono text-gray-700">{memberId}</span> */}
                     <Toggleable 
                       username={userIdToUsernameRef.current.get(memberId) || "Unknown username"} 
                       userId={memberId} 
@@ -367,51 +366,50 @@ const Host = () => {
         )}
       </div>
 
+    {/* Chat Section */}
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-md p-6 mb-8">
-    <h2 className="text-2xl font-semibold mb-4 text-gray-800">Chat</h2>
-    
-    {/* Chat Messages */}
-    <div className="h-64 overflow-y-auto mb-4 border rounded-lg p-3 bg-gray-50">
-        {chatMessages.map((msg, index) => (
+        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Chat</h2>
+        
+        <div className="h-64 overflow-y-auto mb-4 border rounded-lg p-3 bg-gray-50">
+          {chatMessages.map((msg, index) => (
             <div key={index} className={`mb-3 ${msg.senderId === hostId ? 'text-right' : ''}`}>
-                <div className={`inline-block p-2 rounded-lg ${msg.senderId === hostId ? 'bg-blue-100' : 'bg-green-100'}`}>
-                    <p className="text-sm text-gray-600">
-                      {msg.senderId === hostId ? "You" : 
-                        <Toggleable 
-                          username={userIdToUsernameRef.current.get(msg.senderId) || "unknown username"} 
-                          userId={msg.senderId} 
-                        />
-                      }
-                    </p>
-                    <p className="text-gray-800">{msg.text}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                        {new Date(msg.timestamp).toLocaleTimeString()}
-                    </p>
-                </div>
+              <div className={`inline-block p-2 rounded-lg ${msg.senderId === hostId ? 'bg-blue-100' : 'bg-green-100'}`}>
+                <p className="text-sm text-gray-600">
+                  {msg.senderId === hostId ? "You" : 
+                    <Toggleable 
+                      username={userIdToUsernameRef.current.get(msg.senderId) || "unknown username"} 
+                      userId={msg.senderId} 
+                    />
+                  }
+                </p>
+                <p className="text-gray-800">{msg.text}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {new Date(msg.timestamp).toLocaleTimeString()}
+                </p>
+              </div>
             </div>
-        ))}
-    </div>
-    
-    {/* Message Input */}
-    <div className="flex gap-2">
-        <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-        />
-        <button
-              onClick={sendMessage}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-        >
+          ))}
+        </div>
+        
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type a message..."
+            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+          />
+          <button
+            onClick={sendMessage}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
             Send
-        </button>
+          </button>
+        </div>
       </div>
-    </div>
 
-      {/* Close Room Button */}
+    {/* Close Room Button */}
       <button
         onClick={handleCloseRoom}
         className="px-6 py-2.5 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors flex items-center gap-2"
@@ -430,7 +428,7 @@ const Host = () => {
         </svg>
         Close Room
       </button>
-    </div>
+  </div>
   );
 };
 
