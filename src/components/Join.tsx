@@ -45,7 +45,7 @@ const Join = () => {
   }, []);
 
   useEffect(() => {
-    socketRef.current = new WebSocket("ws://localhost:8080");
+    socketRef.current = new WebSocket("wss://ajqbzrmpmledrdfapkrz.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqcWJ6cm1wbWxlZHJkZmFwa3J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI2MzUyNzUsImV4cCI6MjA1ODIxMTI3NX0.X9vRaGsJj75DvJKOa_QSdi5luOCLJN-_41ZYsBnKzx8&log_level=info&vsn=1.0.0");
     const socket = socketRef.current;
 
     socket.onopen = () => {
